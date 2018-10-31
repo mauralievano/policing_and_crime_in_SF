@@ -1,0 +1,75 @@
+---
+title: "modeling"
+author: "Maura Lievano"
+date: "3/28/2018"
+output: html_document
+---
+
+Load libraries 
+```{r message=FALSE, warning=FALSE}
+library(lubridate)
+library(broom)
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(xtable)
+library(ggplot2)
+library(stargazer)
+library(data.table)
+library(base)
+library(magrittr)
+library(readr)
+library(xts)
+library(qdapTools)
+library(data.table)
+library(tidyr)
+library(textshape) # reshaping of categorical variables, which is very cool 
+library(tibble) #works df
+library(tidyverse)
+
+```
+
+
+```{r warning=FALSE}
+load("~/Desktop/sfpd/datasf.RData")
+```
+
+```{r}
+outcome = datasf[ , 8:437]
+results <- list()
+for (i in seq_along(outcome)) {
+  eq <- paste(outcome[i],"~ after + time_r + time2 + tafter + t2after + dow")
+  fit <- lm(as.formula(eq), data = datasf)
+  summary <- summary(fit)
+  coefficients = summary$coefficients
+  results[[i]] <- coefficients
+  }
+```
+
+
+
+```{r}
+estimates = do.call(rbind, lapply(results, data.frame))
+```
+```{r}
+
+```
+
+```{r}
+m = lm(Larceny ~ after + time_r + time2 + tafter + t2after + dow, datasf)
+summary_model = summary(m)
+class(summary_model)
+summary_model$coefficients
+```
+# Processing the estimates dataframe
+```{r}
+d <- estimates
+names <- rownames(d)
+rownames(d) <- NULL
+estimates <- cbind(names, d)
+```
+
+```{r}
+head(estimates)
+```
+

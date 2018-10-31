@@ -7,7 +7,8 @@ Data for this project are incident level crime reports collected by SFPD and ava
 
 For any questions related to this material and project contact:
 
-stevenraphael@berkeley.edu\\
+stevenraphael@berkeley.edu
+\\
 maura.lievano@berkeley.edu
 
 

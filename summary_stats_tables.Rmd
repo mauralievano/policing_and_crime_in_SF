@@ -1,0 +1,155 @@
+---
+title: "graphs"
+author: "Maura Lievano"
+date: "4/11/2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+
+```{r Load Libraries, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(plyr)
+library(dplyr)
+library(xtable)
+library(base)
+library(readr)
+library(xts)
+library(qdapTools)
+library(data.table)
+library(tidyr)
+library(textshape) # reshaping of categorical variables, which is very cool 
+library(tibble) #works df
+library(tidyverse)
+```
+
+
+```{r load data, include=FALSE}
+load("~/Desktop/sfpd/datasf.RData")
+load("~/Desktop/sfpd/cat.RData")
+load("~/Desktop/sfpd/time_vars.RData")
+load("~/Desktop/sfpd/districts/Larceny.RData")
+```
+
+```{r include=FALSE}
+data_cat = cbind(time_vars, cat_dow)
+data_cat = data_cat[ , -c(8, 48)]
+daily_count = colSums(data_cat[, 8:46])
+daily_count = data.frame(daily_count)
+daily_count = setDT(daily_count, keep.rownames = TRUE)[]
+```
+
+```{r format frequency table, include=FALSE}
+colnames(daily_count) <- c("Category", "Count")
+daily_count = daily_count %>% arrange(desc(Count)) 
+
+```
+
+
+```{r}
+daily_count = format(daily_count, digits = 6)
+
+rownames(daily_count) <- NULL
+
+```
+
+```{r}
+
+write.table(daily_count, file = "daily_count.txt", sep = ",", quote = FALSE, row.names = F)
+```
+
+```
+
+
+```{r}
+names_cats = c("Date", "Arson", "Assault","Bad_checks", 
+               "Bribery", "Burglary", "Disorderly", 
+               "DUI",  "Drugs", "Drunkenness", 
+               "Embezzlement", "Extortion", "Family", 
+               "Forgery", "Fraud", "Gambling", 
+               "Kidnapping", "Larceny", "Liquor", 
+               "Loitering", "MissingP", "Non_criminal", 
+               "Other", "Pornography", "Prostitution", 
+               "Recovered_Veh", "Robbery", "Runaway",               
+               "Secondary",  "Sex_force",  "sex_non_force", 
+               "Stolen_property", "Suicide", "OCC", 
+               "TREA",  "Trespass",  "Vandalism", 
+               "Vehicle_theft", "Warrants", "Weapon_laws")  
+```
+
+
+
+```{r run models and create table, include=FALSE}
+data = cbind(time_vars, Larceny)
+outcome = Larceny
+
+results <- list()
+for (i in seq_along(outcome)) {
+  eq <- paste(outcome[i],"~ after + time_r + time2 + tafter + t2after + dow")
+  fit <- lm(as.formula(eq), data = data)
+  summary <- summary(fit)
+  coefficients = summary$coefficients
+  results[[i]] <- coefficients[1:2,]
+}
+
+estimates = do.call(rbind, lapply(results, data.frame))
+rownames(estimates) <- NULL
+estimates = estimates[, c(1, 2, 4)]
+
+
+estimates = cbind(District = 1, estimates)
+
+colnames(estimates) <- c("District", "Estimate", "SE", "p_value")
+
+estimates = round(estimates, digits = 6)
+
+district_names = c("Bayview", "Central", "Ingleside",
+                    "Mission", "Northern", "Park",
+                    "Richmond", "Southern", "Taraval",
+                    "Tenderloin")
+
+
+odd_indexes <- seq(1,nrow(estimates), 2)
+
+even_indexes <- seq(2,nrow(estimates),2)
+
+estimates[odd_indexes, 1 ] <- district_names
+
+estimates[even_indexes, 1] <- "After"
+
+estimates$p_value = format(estimates$p_value , scientific = FALSE)
+
+after_coef = estimates[even_indexes, ]
+after_coef$District <- district_names
+
+# Specify the width of your confidence intervals
+interval1 <- -qnorm((1 - 0.9)/2)  # 90% multiplier
+interval2 <- -qnorm((1 - 0.95)/2)  # 95% multiplier
+```
+
+```{r}
+print(xtable(after_coef), include.rownames = FALSE)
+```
+
+
+```{r echo=FALSE}
+pd = colSums(Larceny) 
+df = data.frame(pd)
+df = setDT(df, keep.rownames = TRUE)[]
+
+total = sum(df$pd)
+
+df = mutate(df, Percentage = (pd/total) * 100)
+df[, 1 ] <- district_names
+colnames(df) = c("District","Count", "Percentage")
+df$Percentage = round(df$Percentage, digits = 2)
+```
+
+```{r}
+xtable(df)
+```
+
+
+
+
